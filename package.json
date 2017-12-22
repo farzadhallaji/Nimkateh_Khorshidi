@@ -1,0 +1,28 @@
+{
+  "name": "end",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "rebuild": "electron-rebuild -f -w sqlite3 electron-fetch ",
+    "rebuild2": "electron-rebuild -f -w electron-fetch ",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "electron": "^1.7.10",
+    "electron-download-manager": "^1.3.1",
+    "electron-fetch": "^1.1.0",
+    "file-type": "^7.4.0",
+    "form-data": "^2.3.1",
+    "fs": "0.0.1-security",
+    "knex": "^0.14.2",
+    "sqlite3": "^3.1.13"
+  },
+  "devDependencies": {
+    "electron-rebuild": "^1.6.0"
+  }
+}
