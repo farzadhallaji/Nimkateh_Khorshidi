@@ -7,6 +7,9 @@ const fileType = require('file-type');
 const fs = require('fs'); // Load the File System to execute our common tasks (CRUD)
 const DownloadManager = require("electron-download-manager");
 
+
+const advertisngfile ="http://localhost/advertisng/file/";
+
 DownloadManager.register({downloadFolder:"Data/File/"});;
 
 
@@ -37,9 +40,57 @@ fileDownload();
 
 
 
-function Setup{
-  files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory+"Data\\Media");
+function Setup(){
+
+  fs.readdir('.', (err, dir) => {
+      for (var i = 0, path; path = dir[i]; i++) {
+              // do stuff with path
+              //console.log(path);
+              files.push(path);
+
+      }
+  });
+  // var walkSync = function(dir, files) {
+  //   var fs = fs || require('fs'),
+  //       files = fs.readdirSync(dir);
+  //   files = files || [];
+  //   files.forEach(function(file) {
+  //     if (fs.statSync(dir + '/' + file).isDirectory()) {
+  //       files = walkSync(dir + file + '/', files);
+  //     }
+  //     else {
+  //       files.push(file);
+  //       console.log(file);
+  //
+  //     }
+  //   });
+  //   return files;
+  // };
+  // var r= walkSync("/",files);
+
+  //files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory+"Data\\Media");
+  // fs.readDir('/node_modules', function(dir) {
+  //   console.log("satre 43");
+  //
+  // // // es5
+  // // for(var i = 0, l = dir.length; i < l; i++) {
+  // //   var filePath = dir[i];
+  // //   console.log(filePath)
+  // // }
+  // // es6
+  //   for(let filePath of dir) {
+  //     console.log(filePath);
+  //   }
+  // });
+  // fs.readdir('.', (err, "Data/Media") => {
+  //     for (var i = 0, path; path = dir[i]; i++) {
+  //             // do stuff with path
+  //             console.log(path);
+  //
+  //     }
+  // });
 }
+
 
 
 
@@ -101,15 +152,16 @@ function fileDownload() {
 //read from db name , version
   var db = new sqlite3.Database(mediadatabase);
   let sql = `SELECT id , name , version FROM doc`;
-
+  var HasRow =false;
   db.all(sql, [], (err, rows) => {
     if (err) {
-      throw err;
+      //throw err;                                    //TODO ilmiram 0 olanda bira ijra olur yo oxuyaniyanda
     }
     rows.forEach((row) => {
       name =row.name;
       version = row.version;
       console.log("database xande shod : "+ name + " : "+ version);
+      hasRow=true;
     });
 
 
@@ -120,57 +172,388 @@ function fileDownload() {
            console.log("Promise Rejected1");
       })
       //.then(json => console.log(json))
+
       .then(function(json){
         console.log(json);
+        console.log("satre 144");
   //      var myArr = JSON.parse(json);
         var array = new Array(Object.keys(json).length);
 
-        for (int i = 0; i < Object.keys(json).length ; i++)
+        for (var i = 0; i < Object.keys(json).length ; i++)
         {
             array[i] = 0;
         }
+        console.log("satre 152");
 
-        for(var i = 0 ; i < Object.keys(json).length ; i++) {
-            console.log(json[i]);
+        if(hasRow){
+          for(var i = 0 ; i < Object.keys(json).length ; i++) {
+              console.log(json[i]);
+              console.log("satre 156");
 
-            if(name == json[i].name){
-              array[i]=(json[i].id);
+              if(name == json[i].name){
+                array[i]=(json[i].id);
+                console.log("satre 160");
 
-              if(version < json[i].version){
-                deleteExitingFile("Data/File/" + json[i].name);
-                downloadNewFile("http://localhost/advertisng/file/"+json[i].name + "?timestamp="+Date.now());
-                UpdateData.push({
-                  id : json[i].id,
-                  name : json[i].name,
-                  version : json[i].version
-                });
+                if(version < json[i].version){
+                  deleteExitingFile("Data/File/" + json[i].name);
+                  downloadNewFile("http://localhost/advertisng/file/"+json[i].name + "?timestamp="+Date.now());
+                  UpdateData.push({
+                    id : json[i].id,
+                    name : json[i].name,
+                    version : json[i].version
+                  });
 
-              }else if (json[i].version == 0) {
-                deleteExitingFile("Data/File/" + json[i].name);
-                DeleteData.push({
+                }else if (json[i].version == 0) {
+                  console.log("satre 172");
+                  deleteExitingFile("Data/File/" + json[i].name);
+                  DeleteData.push({
+                    id : json[i].id,
+                    name : json[i].name,
+                    version : json[i].version
+                  });
+                  console.log("satre 179");
+
+                }
+              }
+              console.log("satre 183");
+
+          }   //end of for
+          for(var i = 0 ; i < Object.keys(json).length ; i++) {
+            console.log("satre 187");
+
+            if (array[i] == 0)
+            {
+              console.log("satre 191");
+
+              NewData.push({
+                id : json[i].id,
+                name : json[i].name,
+                version : json[i].version
+              });
+            }
+          }
+          console.log("satre 200");
+
+          Setup();
+        }
+
+
+
+
+
+        console.log("satre 203");
+        if(NewData.length>0){
+          var db = new sqlite3.Database(mediadatabase);
+          for (var i = 0; i < Object.keys(NewData).length ; i++){
+            // insert one row into the langs table
+              db.run(`INSERT INTO doc (name,version) VALUES (?, ?)`,NewData[i].name,NewData[i].version, function(err) {
+                //db.run("INSERT into table_name(col1,col2,col3) VALUES (val1,val2,val3)");
+                if (err) {
+                  return console.log(err.message);
+                }
+                // get the last insert id
+                console.log(`A row has been inserted `);
+              });
+              downloadNewFile("http://localhost/advertising/file/"+NewData[i].name + "?timestamp="+Date.now());
+          }
+
+          Setup();
+          NewData = [];
+        }
+
+
+
+
+        if(DeleteData.length>0){
+          var db = new sqlite3.Database(mediadatabase);
+          for (var i = 0; i < Object.keys(DeleteData).length ; i++){
+            // insert one row into the langs table
+              db.run(`UPDATE  doc SET version=? WHERE id=? VALUES (?, ?)`,DeleteData[i].version,DeleteData[i].id, function(err) {
+                //db.run("INSERT into table_name(col1,col2,col3) VALUES (val1,val2,val3)");
+                if (err) {
+                  return console.log(err.message);
+                }
+                // get the last insert id
+                console.log(`A row has been updated `);
+              });
+          }
+          Setup();
+          DeleteData = [];
+        }
+
+
+
+
+        if(UpdateData.length>0){
+          var db = new sqlite3.Database(mediadatabase);
+          for (var i = 0; i < Object.keys(UpdateData).length ; i++){
+            // insert one row into the langs table
+              db.run(`UPDATE  doc SET version=? WHERE id=? VALUES (?, ?)`,UpdateData[i].version,UpdateData[i].id, function(err) {
+                //db.run("INSERT into table_name(col1,col2,col3) VALUES (val1,val2,val3)");
+                if (err) {
+                  return console.log(err.message);
+                }
+                // get the last insert id
+                console.log(`A row has been updated `);
+              });
+          }
+          Setup();
+          UpdateData = [];
+        }
+      if(!hasRow){
+
+        var db = new sqlite3.Database(mediadatabase);
+        for (var i = 0; i < Object.keys(json).length ; i++){
+          // insert one row into the langs table
+            db.run(`INSERT INTO doc (name,version) VALUES (?, ?)`,json[i].name,json[i].version, function(err) {
+              //db.run("INSERT into table_name(col1,col2,col3) VALUES (val1,val2,val3)");
+              if (err) {
+                return console.log(err.message);
+              }
+              // get the last insert id
+              console.log(`A row has been inserted `);
+            });
+            downloadNewFile("http://localhost/advertising/file/"+json[i].name + "?timestamp="+Date.now());
+        }
+        hasRow=true;
+        Setup();
+      }
+
+      })
+      .catch(function () {
+           console.log("Promise Rejected2");
+      });
+    });
+    db.close();
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+  function mediaDownload() {
+
+    const fetch = require('electron-fetch');
+    const url2getJson="http://localhost/advertising/api.php?msg=whatsupmedia";
+    var name , version;
+
+
+  //read from db name , version
+    var db = new sqlite3.Database(mediadatabase);
+    let sql = `SELECT id , name , version FROM media`;
+    var HasRow =false;
+    db.all(sql, [], (err, rows) => {
+      if (err) {
+        //throw err;                                    //TODO ilmiram 0 olanda bira ijra olur yo oxuyaniyanda
+      }
+      rows.forEach((row) => {
+        name =row.name;
+        version = row.version;
+        console.log("database xande shod : "+ name + " : "+ version);
+        hasRow=true;
+      });
+
+
+  //get data from server in json template
+    fetch(url2getJson)
+        .then(res => res.json())
+        .catch(function () {
+             console.log("Promise Rejected1");
+        })
+        //.then(json => console.log(json))
+
+        .then(function(json){
+          console.log(json);
+          console.log("satre 144");
+    //      var myArr = JSON.parse(json);
+          var array = new Array(Object.keys(json).length);
+
+          for (var i = 0; i < Object.keys(json).length ; i++)
+          {
+              array[i] = 0;
+          }
+          console.log("satre 152");
+
+          if(hasRow){
+            for(var i = 0 ; i < Object.keys(json).length ; i++) {
+                console.log(json[i]);
+                console.log("satre 156");
+
+                if(name == json[i].name){
+                  array[i]=(json[i].id);
+                  console.log("satre 160");
+
+                  if(version < json[i].version){
+                    deleteExitingFile("Data/Media/" + json[i].name);
+                    downloadNewFile("http://localhost/advertisng/media/"+json[i].name + "?timestamp="+Date.now());
+                    UpdateData.push({
+                      id : json[i].id,
+                      name : json[i].name,
+                      version : json[i].version
+                    });
+
+                  }else if (json[i].version == 0) {
+                    console.log("satre 172");
+                    deleteExitingFile("Data/Media/" + json[i].name);
+                    DeleteData.push({
+                      id : json[i].id,
+                      name : json[i].name,
+                      version : json[i].version
+                    });
+                    console.log("satre 179");
+
+                  }
+                }
+                console.log("satre 183");
+
+            }   //end of for
+            for(var i = 0 ; i < Object.keys(json).length ; i++) {
+              console.log("satre 187");
+
+              if (array[i] == 0)
+              {
+                console.log("satre 191");
+
+                NewData.push({
                   id : json[i].id,
                   name : json[i].name,
                   version : json[i].version
                 });
               }
             }
-        }   //end of for
-        for(var i = 0 ; i < Object.keys(json).length ; i++) {
-          if (array[i] == 0)
-          {
-            NewData.push({
-              id : json[i].id,
-              name : json[i].name,
-              version : json[i].version
-            });
-          }
-        }
-        Setup();
+            console.log("satre 200");
 
-      })
-      .catch(function () {
-           console.log("Promise Rejected2");
+            Setup();
+          }
+
+
+
+
+
+          console.log("satre 203");
+          if(NewData.length>0){
+            var db = new sqlite3.Database(mediadatabase);
+            for (var i = 0; i < Object.keys(NewData).length ; i++){
+              // insert one row into the langs table
+                db.run(`INSERT INTO media (name,version) VALUES (?, ?)`,NewData[i].name,NewData[i].version, function(err) {
+                  //db.run("INSERT into table_name(col1,col2,col3) VALUES (val1,val2,val3)");
+                  if (err) {
+                    return console.log(err.message);
+                  }
+                  // get the last insert id
+                  console.log(`A row has been inserted `);
+                });
+                downloadNewFile("http://localhost/advertising/media/"+NewData[i].name + "?timestamp="+Date.now());
+            }
+
+            Setup();
+            NewData = [];
+          }
+
+
+
+
+          if(DeleteData.length>0){
+            var db = new sqlite3.Database(mediadatabase);
+            for (var i = 0; i < Object.keys(DeleteData).length ; i++){
+              // insert one row into the langs table
+                db.run(`UPDATE  doc SET version=? WHERE id=? VALUES (?, ?)`,DeleteData[i].version,DeleteData[i].id, function(err) {
+                  //db.run("INSERT into table_name(col1,col2,col3) VALUES (val1,val2,val3)");
+                  if (err) {
+                    return console.log(err.message);
+                  }
+                  // get the last insert id
+                  console.log(`A row has been updated `);
+                });
+            }
+            Setup();
+            DeleteData = [];
+          }
+
+
+
+
+          if(UpdateData.length>0){
+            var db = new sqlite3.Database(mediadatabase);
+            for (var i = 0; i < Object.keys(UpdateData).length ; i++){
+              // insert one row into the langs table
+                db.run(`UPDATE  media SET version=? WHERE id=? VALUES (?, ?)`,UpdateData[i].version,UpdateData[i].id, function(err) {
+                  //db.run("INSERT into table_name(col1,col2,col3) VALUES (val1,val2,val3)");
+                  if (err) {
+                    return console.log(err.message);
+                  }
+                  // get the last insert id
+                  console.log(`A row has been updated `);
+                });
+            }
+            Setup();
+            UpdateData = [];
+          }
+        if(!hasRow){
+
+          var db = new sqlite3.Database(mediadatabase);
+          for (var i = 0; i < Object.keys(json).length ; i++){
+            // insert one row into the langs table
+              db.run(`INSERT INTO media (name,version) VALUES (?, ?)`,json[i].name,json[i].version, function(err) {
+                //db.run("INSERT into table_name(col1,col2,col3) VALUES (val1,val2,val3)");
+                if (err) {
+                  return console.log(err.message);
+                }
+                // get the last insert id
+                console.log(`A row has been inserted `);
+              });
+              downloadNewFile("http://localhost/advertising/media/"+json[i].name + "?timestamp="+Date.now());
+          }
+          hasRow=true;
+          Setup();
+        }
+
+        })
+        .catch(function () {
+             console.log("Promise Rejected2");
+        });
       });
+      db.close();
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //////////////////// ravesh 2
 //   db.serialize(() => {
@@ -190,10 +573,9 @@ function fileDownload() {
 // });
 ////////////////////////////////
 
-});
+
 
 // close the database connection
-db.close();
 
 
   // fetch("https://www.google.com/") // Call the fetch function passing the url of the API as a parameter
@@ -312,7 +694,6 @@ db.close();
 // })()
 
 
-}
 
 
 
@@ -380,16 +761,5 @@ db.close();
 
 
 });
-
-
-
-
-
-
-
-
-
-
-
 
 app.on("window-all-closed", () => { app.quit() })
